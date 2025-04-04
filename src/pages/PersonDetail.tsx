@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Person, PersonStatus } from "@/types";
 import { MapPin, Calendar, ArrowDown, Mail, User } from "lucide-react";
 
-// Mock data combining both missing and found persons
+// Mock data combining both missing and found persons with realistic images
 const mockPersons: Person[] = [
   {
     id: "1",
@@ -19,7 +19,7 @@ const mockPersons: Person[] = [
     lastSeenLocation: "New York, NY",
     description: "Last seen wearing a blue jacket and jeans. Has a small scar on his right cheek.",
     contactInfo: "contact@example.com",
-    imageUrl: "https://source.unsplash.com/random/300x400/?portrait,man",
+    imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=800&fit=crop",
     status: PersonStatus.MISSING,
     reportedDate: "2023-11-16",
   },
@@ -32,7 +32,7 @@ const mockPersons: Person[] = [
     lastSeenLocation: "Los Angeles, CA",
     description: "Last seen wearing a red dress and black coat.",
     contactInfo: "contact@example.com",
-    imageUrl: "https://source.unsplash.com/random/300x400/?portrait,woman",
+    imageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&h=800&fit=crop",
     status: PersonStatus.MISSING,
     reportedDate: "2023-12-02",
   },
@@ -45,7 +45,7 @@ const mockPersons: Person[] = [
     lastSeenLocation: "Chicago, IL",
     description: "Has a tattoo on his left arm. Last seen at downtown train station.",
     contactInfo: "contact@example.com",
-    imageUrl: "https://source.unsplash.com/random/300x400/?portrait,middle-aged",
+    imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=800&fit=crop",
     status: PersonStatus.MISSING,
     reportedDate: "2023-10-21",
   },
@@ -58,7 +58,7 @@ const mockPersons: Person[] = [
     lastSeenLocation: "Boston, MA",
     description: "Found near Boston Common. Medium height, brown hair. May have amnesia.",
     contactInfo: "boston.police@example.com",
-    imageUrl: "https://source.unsplash.com/random/300x400/?portrait,confused",
+    imageUrl: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=600&h=800&fit=crop",
     status: PersonStatus.FOUND,
     reportedDate: "2023-12-11",
   },
@@ -71,7 +71,7 @@ const mockPersons: Person[] = [
     lastSeenLocation: "Seattle, WA",
     description: "Found at local shelter. No identification, speaks with foreign accent.",
     contactInfo: "seattle.services@example.com",
-    imageUrl: "https://source.unsplash.com/random/300x400/?portrait,young-woman",
+    imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&h=800&fit=crop",
     status: PersonStatus.FOUND,
     reportedDate: "2023-12-01",
   },

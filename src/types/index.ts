@@ -32,3 +32,11 @@ export interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
 }
+
+// Brand colors for consistent use throughout the app
+export const BRAND_COLORS = {
+  blue: '#4c6ef5',
+  purple: '#9b87f5',
+  red: '#e53e3e',
+  green: '#38a169'
+};

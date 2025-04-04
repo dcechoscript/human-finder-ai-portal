@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AiMatchingButton from "@/components/AiMatchingButton";
 
 // Pages
 import Index from "./pages/Index";
@@ -40,6 +41,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AiMatchingButton />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
