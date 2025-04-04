@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Person, PersonStatus } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User } from "lucide-react";
+import { User, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface PersonSelectorProps {
   persons: Person[];
@@ -17,9 +18,26 @@ const PersonSelector: React.FC<PersonSelectorProps> = ({
   selected 
 }) => {
   const [activeTab, setActiveTab] = useState<PersonStatus>(PersonStatus.MISSING);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   
-  const missingPersons = persons.filter(person => person.status === PersonStatus.MISSING);
-  const foundPersons = persons.filter(person => person.status === PersonStatus.FOUND);
+  const filteredPersons = persons.filter(person => {
+    // Filter by status tab
+    if (person.status !== activeTab) return false;
+    
+    // Filter by search term (name or description)
+    const matchesSearch = 
+      !searchTerm || 
+      person.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (person.description && person.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by location
+    const matchesLocation = 
+      !locationFilter || 
+      (person.lastSeenLocation && person.lastSeenLocation.toLowerCase().includes(locationFilter.toLowerCase()));
+    
+    return matchesSearch && matchesLocation;
+  });
   
   return (
     <div>
@@ -33,12 +51,56 @@ const PersonSelector: React.FC<PersonSelectorProps> = ({
           </TabsTrigger>
         </TabsList>
         
+        <div className="mt-4 space-y-4">
+          {/* Search and filter inputs */}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by name or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div className="relative flex-1">
+              <Input
+                placeholder="Filter by location..."
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+              />
+              {locationFilter && (
+                <button 
+                  onClick={() => setLocationFilter("")}
+                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Results count */}
+          <div className="text-sm text-gray-500">
+            Showing {filteredPersons.length} {activeTab} {filteredPersons.length === 1 ? 'person' : 'people'}
+            {(searchTerm || locationFilter) && " matching filters"}
+          </div>
+        </div>
+        
         <TabsContent value={PersonStatus.MISSING} className="mt-4">
-          {missingPersons.length === 0 ? (
-            <p className="text-center py-6 text-gray-500">No missing persons found in the database.</p>
+          {filteredPersons.length === 0 ? (
+            <p className="text-center py-6 text-gray-500">No missing persons found matching your criteria.</p>
           ) : (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-              {missingPersons.map(person => (
+            <div className="grid gap-4 grid-cols-1">
+              {filteredPersons.map(person => (
                 <PersonCard 
                   key={person.id} 
                   person={person} 
@@ -51,11 +113,11 @@ const PersonSelector: React.FC<PersonSelectorProps> = ({
         </TabsContent>
         
         <TabsContent value={PersonStatus.FOUND} className="mt-4">
-          {foundPersons.length === 0 ? (
-            <p className="text-center py-6 text-gray-500">No found persons in the database.</p>
+          {filteredPersons.length === 0 ? (
+            <p className="text-center py-6 text-gray-500">No found persons matching your criteria.</p>
           ) : (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-              {foundPersons.map(person => (
+            <div className="grid gap-4 grid-cols-1">
+              {filteredPersons.map(person => (
                 <PersonCard 
                   key={person.id} 
                   person={person} 
@@ -105,6 +167,9 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, onSelect, isSelected })
             <p className="text-sm text-gray-500">
               {person.lastSeenLocation} • {new Date(person.lastSeenDate).toLocaleDateString()}
             </p>
+            {person.description && (
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{person.description}</p>
+            )}
           </div>
           <Badge 
             variant={person.status === PersonStatus.MISSING ? "destructive" : "default"}

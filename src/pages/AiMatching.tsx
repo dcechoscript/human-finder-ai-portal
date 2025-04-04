@@ -67,6 +67,37 @@ const mockPersons: Person[] = [
   },
 ];
 
+// Mock function to simulate face detection AI
+const isHumanFace = (imageDataUrl: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    // Create an image to analyze
+    const img = new Image();
+    img.onload = () => {
+      // In a real app, here we would use a face detection API or ML model
+      // For this mock, we'll do a simple check that it's not a monkey or animal
+      // based on image properties that would typically be analyzed
+      
+      // For demo purposes, if the image contains specific keywords in the data URL
+      // that might indicate non-human images, return false
+      // This is a very naive implementation for demo purposes
+      const lowerCaseUrl = imageDataUrl.toLowerCase();
+      const possiblyAnimal = 
+        lowerCaseUrl.includes("monkey") || 
+        lowerCaseUrl.includes("animal") ||
+        // In a real implementation, we'd use ML to analyze the image
+        // This is just to simulate "detection" for our demo
+        Math.random() > 0.8; // 20% chance to simulate a non-human image
+      
+      resolve(!possiblyAnimal);
+    };
+    img.onerror = () => {
+      // If we can't load the image, assume it's invalid
+      resolve(false);
+    };
+    img.src = imageDataUrl;
+  });
+};
+
 const AiMatching = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"upload" | "select">("select");
@@ -84,7 +115,7 @@ const AiMatching = () => {
     setSelectedPerson(person);
   };
   
-  const runAiMatching = () => {
+  const runAiMatching = async () => {
     // Validate that we have either an uploaded image or a selected person
     if (!uploadedImage && !selectedPerson && activeTab === "upload") {
       toast({
@@ -108,6 +139,24 @@ const AiMatching = () => {
     setHasSearched(false);
     setSearchResults([]);
     
+    // For uploaded images, first validate that it contains a human face
+    if (activeTab === "upload" && uploadedImage) {
+      const isHuman = await isHumanFace(uploadedImage);
+      
+      if (!isHuman) {
+        setIsSearching(false);
+        setHasSearched(true);
+        setSearchResults([]);
+        
+        toast({
+          title: "No human face detected",
+          description: "We couldn't detect a human face in the uploaded image. Please upload a clear photo of a person.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     // Mock AI matching - simulate API call
     setTimeout(() => {
       let results: Person[];
@@ -124,8 +173,8 @@ const AiMatching = () => {
           (person.gender === selectedPerson.gender || !person.gender || !selectedPerson.gender)
         );
       } else {
-        // For uploaded images, just return random results from both categories
-        results = mockPersons.filter((_, index) => index % 2 === 0);
+        // For uploaded images, return relevant results
+        results = mockPersons.filter(person => Math.random() > 0.5);
       }
       
       // Simulate sometimes finding no results
