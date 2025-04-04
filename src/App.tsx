@@ -18,6 +18,7 @@ import ReportFound from "./pages/ReportFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
+import AiMatching from "./pages/AiMatching";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/about" element={<About />} />
+            <Route path="/ai-matching" element={<AiMatching />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Popover,
@@ -10,6 +11,7 @@ import { Brain, X } from "lucide-react";
 import { Person, PersonStatus } from "@/types";
 
 const AiMatchingButton = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<Person[]>([]);
@@ -52,6 +54,11 @@ const AiMatchingButton = () => {
     }, 2000);
   };
   
+  const goToAiMatchingPage = () => {
+    setIsOpen(false);
+    navigate("/ai-matching");
+  };
+  
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -83,12 +90,21 @@ const AiMatchingButton = () => {
                   <p className="text-sm text-gray-600">
                     Our AI can scan photos to find potential matches between missing and found persons.
                   </p>
-                  <Button 
-                    onClick={handleMatchingRequest}
-                    className="w-full bg-brand-purple hover:bg-brand-purple/90"
-                  >
-                    Start Face Matching
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={handleMatchingRequest}
+                      className="w-full bg-brand-purple hover:bg-brand-purple/90"
+                    >
+                      Quick Face Matching
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={goToAiMatchingPage}
+                      className="w-full"
+                    >
+                      Advanced AI Matching
+                    </Button>
+                  </div>
                 </div>
               ) : isProcessing ? (
                 <div className="py-8 flex flex-col items-center justify-center space-y-3">
@@ -136,12 +152,21 @@ const AiMatchingButton = () => {
                       </a>
                     ))}
                   </div>
-                  <Button 
-                    onClick={handleMatchingRequest} 
-                    className="w-full bg-brand-purple hover:bg-brand-purple/90"
-                  >
-                    Run New Match
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={handleMatchingRequest} 
+                      className="w-full bg-brand-purple hover:bg-brand-purple/90"
+                    >
+                      Run New Match
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={goToAiMatchingPage}
+                      className="w-full"
+                    >
+                      Advanced AI Matching
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
