@@ -20,7 +20,7 @@ https://github.com/justadudewhohacks/face-api.js/tree/master/weights
 
 After downloading, place all files in this directory.
 
-## Alternatively:
+## Automated Download Script:
 
 Run the following command in your terminal to download the models:
 
@@ -38,3 +38,14 @@ curl -O https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/w
 curl -O https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_recognition_model-shard1
 curl -O https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_recognition_model-shard2
 ```
+
+## Verification
+
+To verify that the models are loaded correctly, open your browser's developer tools console when using the AI Face Matching feature. You should see a message saying "Face detection models loaded successfully" if everything is working properly.
+
+## Troubleshooting
+
+If you're seeing errors like "Failed to load face detection models", make sure:
+1. All model files are placed in the `/public/models` directory
+2. Your web server can access these files (check network tab in browser dev tools)
+3. You don't have CORS issues if testing locally

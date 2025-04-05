@@ -3,14 +3,24 @@ import { useState } from "react";
 import { Person, PersonStatus } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Search, X } from "lucide-react";
+import { User, Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 interface PersonSelectorProps {
   persons: Person[];
   onSelect: (person: Person) => void;
   selected: Person | null;
 }
+
+type FilterType = "name" | "location" | "description" | "age" | "gender";
 
 const PersonSelector: React.FC<PersonSelectorProps> = ({ 
   persons, 
@@ -19,25 +29,35 @@ const PersonSelector: React.FC<PersonSelectorProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<PersonStatus>(PersonStatus.MISSING);
   const [searchTerm, setSearchTerm] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
+  const [filterType, setFilterType] = useState<FilterType>("name");
   
   const filteredPersons = persons.filter(person => {
     // Filter by status tab
     if (person.status !== activeTab) return false;
     
-    // Filter by search term (name or description)
-    const matchesSearch = 
-      !searchTerm || 
-      person.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (person.description && person.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    // No search term provided
+    if (!searchTerm) return true;
     
-    // Filter by location
-    const matchesLocation = 
-      !locationFilter || 
-      (person.lastSeenLocation && person.lastSeenLocation.toLowerCase().includes(locationFilter.toLowerCase()));
-    
-    return matchesSearch && matchesLocation;
+    // Apply selected filter
+    switch (filterType) {
+      case "name":
+        return person.name.toLowerCase().includes(searchTerm.toLowerCase());
+      case "location":
+        return person.lastSeenLocation?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      case "description":
+        return person.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      case "age":
+        return person.age?.toString() === searchTerm;
+      case "gender":
+        return person.gender?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      default:
+        return true;
+    }
   });
+  
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
   
   return (
     <div>
@@ -52,46 +72,46 @@ const PersonSelector: React.FC<PersonSelectorProps> = ({
         </TabsList>
         
         <div className="mt-4 space-y-4">
-          {/* Search and filter inputs */}
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
+          {/* Unified search with filter type selection */}
+          <div className="flex gap-2">
+            <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by name or description..."
+                placeholder={`Search by ${filterType}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
               {searchTerm && (
                 <button 
-                  onClick={() => setSearchTerm("")}
+                  onClick={handleClearSearch}
                   className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-            <div className="relative flex-1">
-              <Input
-                placeholder="Filter by location..."
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-              />
-              {locationFilter && (
-                <button 
-                  onClick={() => setLocationFilter("")}
-                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            <Select value={filterType} onValueChange={(value) => setFilterType(value as FilterType)}>
+              <SelectTrigger className="w-[180px]">
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="location">Location</SelectItem>
+                <SelectItem value="description">Description</SelectItem>
+                <SelectItem value="age">Age</SelectItem>
+                <SelectItem value="gender">Gender</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Results count */}
           <div className="text-sm text-gray-500">
             Showing {filteredPersons.length} {activeTab} {filteredPersons.length === 1 ? 'person' : 'people'}
-            {(searchTerm || locationFilter) && " matching filters"}
+            {searchTerm && ` matching "${searchTerm}" in ${filterType}`}
           </div>
         </div>
         

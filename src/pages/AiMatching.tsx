@@ -9,7 +9,6 @@ import { Upload, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
 import { Person, PersonStatus } from "@/types";
 import ImageUploader from "@/components/ImageUploader";
 import PersonSelector from "@/components/PersonSelector";
-import PersonSearch from "@/components/PersonSearch";
 import { toast } from "@/hooks/use-toast";
 import { detectHumanFace, compareFaces, preloadImage } from "@/utils/faceDetection";
 
@@ -77,7 +76,6 @@ const AiMatching = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Person[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [filteredPersons, setFilteredPersons] = useState<Person[]>(mockPersons);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelLoadError, setModelLoadError] = useState<string | null>(null);
   
@@ -90,16 +88,13 @@ const AiMatching = () => {
         setIsLoadingModels(true);
         setModelLoadError(null);
         
-        // This would actually load models, but we're just simulating for now
-        // await loadFaceDetectionModels();
-        
-        // Simulate model loading delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Actually load the face detection models
+        await loadFaceDetectionModels();
         
         setIsLoadingModels(false);
       } catch (error) {
         console.error("Failed to load face detection models:", error);
-        setModelLoadError("Failed to load face detection models. Please try again later.");
+        setModelLoadError("Failed to load face detection models. Make sure you've downloaded the required model files.");
         setIsLoadingModels(false);
       }
     };
@@ -113,11 +108,25 @@ const AiMatching = () => {
     // Create image reference for face detection
     const img = new Image();
     img.src = imageDataUrl;
-    uploadedImageRef.current = img;
+    img.onload = () => {
+      uploadedImageRef.current = img;
+    };
   };
   
   const handlePersonSelect = (person: Person) => {
     setSelectedPerson(person);
+  };
+  
+  // Function to load face detection models
+  const loadFaceDetectionModels = async () => {
+    try {
+      const { loadFaceDetectionModels } = await import('@/utils/faceDetection');
+      await loadFaceDetectionModels();
+      return true;
+    } catch (error) {
+      console.error("Error loading face detection models:", error);
+      return false;
+    }
   };
   
   const runAiMatching = async () => {
@@ -145,19 +154,10 @@ const AiMatching = () => {
     setSearchResults([]);
     
     try {
-      // For uploaded images, first validate that it contains a human face
+      // For uploaded images, validate that it contains a human face
       if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
-        // In a real app, we'd use face-api.js here, but we'll simulate for demo
-        // const isHuman = await detectHumanFace(uploadedImageRef.current);
-        
-        // Simulate face detection with a delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Simulate a random result, with high probability of detecting faces in human images
-        // and low probability in non-human images
-        const isHuman = !uploadedImage.toLowerCase().includes('monkey') && 
-                        !uploadedImage.toLowerCase().includes('animal') &&
-                        Math.random() > 0.1; // 90% chance for human detection
+        // Actually use face-api.js to detect faces
+        const isHuman = await detectHumanFace(uploadedImageRef.current);
         
         if (!isHuman) {
           setIsSearching(false);
@@ -173,9 +173,6 @@ const AiMatching = () => {
         }
       }
       
-      // Simulate AI matching with a delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
       let results: Person[] = [];
       
       if (activeTab === "select" && selectedPerson) {
@@ -184,21 +181,81 @@ const AiMatching = () => {
           ? PersonStatus.FOUND 
           : PersonStatus.MISSING;
         
-        // In a real app, we would use face comparison to find matches
-        // Here we're just filtering by status and gender as a simulation
         const potentialMatches = mockPersons.filter(person => 
           person.status === oppositeStatus && 
-          person.id !== selectedPerson.id &&
-          (person.gender === selectedPerson.gender || !person.gender || !selectedPerson.gender)
+          person.id !== selectedPerson.id
         );
         
-        // Simulate face matching with each potential match
-        // In a real application, we'd use face-api.js compareFaces here
-        results = potentialMatches.filter(() => Math.random() > 0.4); // 60% match rate for demo
-      } else if (activeTab === "upload" && uploadedImage) {
+        // Use face-api.js to compare faces
+        const matchPromises = potentialMatches.map(async (person) => {
+          try {
+            // Load both images for comparison
+            const sourceImg = await preloadImage(selectedPerson.imageUrl || '');
+            const targetImg = await preloadImage(person.imageUrl || '');
+            
+            // Compare faces
+            const { matches, similarity } = await compareFaces(
+              sourceImg, 
+              targetImg, 
+              0.55 // Adjust threshold for stricter matching
+            );
+            
+            if (matches) {
+              // Add similarity score to the person object for sorting
+              return {
+                ...person,
+                matchScore: similarity
+              };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error comparing faces for person ${person.id}:`, error);
+            return null;
+          }
+        });
+        
+        // Wait for all comparisons to complete
+        const matchResults = await Promise.all(matchPromises);
+        
+        // Filter out null results and sort by similarity
+        results = matchResults
+          .filter((result): result is Person & { matchScore: number } => result !== null)
+          .sort((a, b) => b.matchScore - a.matchScore);
+      } else if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
         // For uploaded images, compare with all persons
-        // In a real app, we'd use face comparison here
-        results = mockPersons.filter(() => Math.random() > 0.5); // 50% match rate for demo
+        const matchPromises = mockPersons.map(async (person) => {
+          try {
+            // Load the target image
+            const targetImg = await preloadImage(person.imageUrl || '');
+            
+            // Compare faces
+            const { matches, similarity } = await compareFaces(
+              uploadedImageRef.current!, 
+              targetImg,
+              0.55 // Adjust threshold for stricter matching
+            );
+            
+            if (matches) {
+              // Add similarity score to the person object for sorting
+              return {
+                ...person,
+                matchScore: similarity
+              };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error comparing uploaded face with person ${person.id}:`, error);
+            return null;
+          }
+        });
+        
+        // Wait for all comparisons to complete
+        const matchResults = await Promise.all(matchPromises);
+        
+        // Filter out null results and sort by similarity
+        results = matchResults
+          .filter((result): result is Person & { matchScore: number } => result !== null)
+          .sort((a, b) => b.matchScore - a.matchScore);
       }
       
       setSearchResults(results);
@@ -280,15 +337,8 @@ const AiMatching = () => {
                         Choose a person from our database. We'll search for potential matches in the opposite category.
                       </p>
                       
-                      <div className="mb-6">
-                        <PersonSearch 
-                          persons={mockPersons}
-                          onFilteredPersons={setFilteredPersons}
-                        />
-                      </div>
-                      
                       <PersonSelector
-                        persons={filteredPersons}
+                        persons={mockPersons}
                         onSelect={handlePersonSelect}
                         selected={selectedPerson}
                       />
