@@ -13,12 +13,27 @@ To use the face detection feature, you need to download the face-api.js models a
 6. `face_recognition_model-shard1`
 7. `face_recognition_model-shard2`
 
+## IMPORTANT: Models Must Be Downloaded Before Use
+
+The AI face matching feature requires these model files to work properly. Run the download script in this directory:
+
+```bash
+# Navigate to the project root
+cd public/models
+node download-models.js
+```
+
+Alternatively, run this command from the project root:
+```bash
+node public/models/download-models.js
+```
+
 ## How to Get the Models:
 
-You can download these files from the face-api.js GitHub repository:
+You can download these files manually from the face-api.js GitHub repository:
 https://github.com/justadudewhohacks/face-api.js/tree/master/weights
 
-After downloading, place all files in this directory.
+After downloading, place all files in this directory (`public/models/`).
 
 ## Automated Download Script:
 
@@ -49,3 +64,4 @@ If you're seeing errors like "Failed to load face detection models", make sure:
 1. All model files are placed in the `/public/models` directory
 2. Your web server can access these files (check network tab in browser dev tools)
 3. You don't have CORS issues if testing locally
+4. Run the `download-models.js` script to automatically download the required files

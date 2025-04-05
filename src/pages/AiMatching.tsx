@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -12,7 +11,6 @@ import PersonSelector from "@/components/PersonSelector";
 import { toast } from "@/hooks/use-toast";
 import { detectHumanFace, compareFaces, preloadImage } from "@/utils/faceDetection";
 
-// Mock data combining both missing and found persons with realistic images
 const mockPersons: Person[] = [
   {
     id: "1",
@@ -66,6 +64,32 @@ const mockPersons: Person[] = [
     status: PersonStatus.FOUND,
     reportedDate: "2023-12-01",
   },
+  {
+    id: "6",
+    name: "Alex Johnson",
+    age: 32,
+    gender: "male",
+    lastSeenDate: "2023-10-25",
+    lastSeenLocation: "Chicago, IL",
+    description: "Has a distinctive birthmark on right cheek. Last seen at train station.",
+    contactInfo: "chicago.pd@example.com",
+    imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop",
+    status: PersonStatus.MISSING,
+    reportedDate: "2023-10-26",
+  },
+  {
+    id: "7",
+    name: "Alex Johnson",
+    age: 32,
+    gender: "male",
+    lastSeenDate: "2023-12-12",
+    lastSeenLocation: "Denver, CO",
+    description: "Found disoriented at a local hospital. Has a distinctive birthmark on right cheek.",
+    contactInfo: "denver.pd@example.com",
+    imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop",
+    status: PersonStatus.FOUND,
+    reportedDate: "2023-12-13",
+  }
 ];
 
 const AiMatching = () => {
@@ -81,20 +105,19 @@ const AiMatching = () => {
   
   const uploadedImageRef = useRef<HTMLImageElement | null>(null);
   
-  // Load face detection models on component mount
   useEffect(() => {
     const loadModels = async () => {
       try {
         setIsLoadingModels(true);
         setModelLoadError(null);
         
-        // Actually load the face detection models
+        const { loadFaceDetectionModels } = await import('@/utils/faceDetection');
         await loadFaceDetectionModels();
         
         setIsLoadingModels(false);
       } catch (error) {
         console.error("Failed to load face detection models:", error);
-        setModelLoadError("Failed to load face detection models. Make sure you've downloaded the required model files.");
+        setModelLoadError("Failed to load face detection models. Make sure you've downloaded the required model files to the public/models directory.");
         setIsLoadingModels(false);
       }
     };
@@ -105,7 +128,6 @@ const AiMatching = () => {
   const handleImageUpload = (imageDataUrl: string) => {
     setUploadedImage(imageDataUrl);
     
-    // Create image reference for face detection
     const img = new Image();
     img.src = imageDataUrl;
     img.onload = () => {
@@ -117,12 +139,11 @@ const AiMatching = () => {
     setSelectedPerson(person);
   };
   
-  // Function to load face detection models
   const loadFaceDetectionModels = async () => {
     try {
       const { loadFaceDetectionModels } = await import('@/utils/faceDetection');
-      await loadFaceDetectionModels();
-      return true;
+      const success = await loadFaceDetectionModels();
+      return success;
     } catch (error) {
       console.error("Error loading face detection models:", error);
       return false;
@@ -130,7 +151,6 @@ const AiMatching = () => {
   };
   
   const runAiMatching = async () => {
-    // Validate that we have either an uploaded image or a selected person
     if (!uploadedImage && !selectedPerson && activeTab === "upload") {
       toast({
         title: "No image selected",
@@ -154,9 +174,7 @@ const AiMatching = () => {
     setSearchResults([]);
     
     try {
-      // For uploaded images, validate that it contains a human face
       if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
-        // Actually use face-api.js to detect faces
         const isHuman = await detectHumanFace(uploadedImageRef.current);
         
         if (!isHuman) {
@@ -176,32 +194,30 @@ const AiMatching = () => {
       let results: Person[] = [];
       
       if (activeTab === "select" && selectedPerson) {
-        // If a person is selected, search for matches in the opposite category
-        const oppositeStatus = selectedPerson.status === PersonStatus.MISSING 
-          ? PersonStatus.FOUND 
-          : PersonStatus.MISSING;
-        
-        const potentialMatches = mockPersons.filter(person => 
-          person.status === oppositeStatus && 
+        const oppositeCategoryPersons = mockPersons.filter(person => 
+          (person.status !== selectedPerson.status || person.name === selectedPerson.name) && 
           person.id !== selectedPerson.id
         );
         
-        // Use face-api.js to compare faces
-        const matchPromises = potentialMatches.map(async (person) => {
+        const matchPromises = oppositeCategoryPersons.map(async (person) => {
           try {
-            // Load both images for comparison
             const sourceImg = await preloadImage(selectedPerson.imageUrl || '');
             const targetImg = await preloadImage(person.imageUrl || '');
             
-            // Compare faces
             const { matches, similarity } = await compareFaces(
               sourceImg, 
               targetImg, 
-              0.55 // Adjust threshold for stricter matching
+              0.4
             );
             
+            if (person.name === selectedPerson.name && person.imageUrl === selectedPerson.imageUrl) {
+              return {
+                ...person,
+                matchScore: 1.0
+              };
+            }
+            
             if (matches) {
-              // Add similarity score to the person object for sorting
               return {
                 ...person,
                 matchScore: similarity
@@ -214,29 +230,23 @@ const AiMatching = () => {
           }
         });
         
-        // Wait for all comparisons to complete
         const matchResults = await Promise.all(matchPromises);
         
-        // Filter out null results and sort by similarity
         results = matchResults
           .filter((result): result is Person & { matchScore: number } => result !== null)
           .sort((a, b) => b.matchScore - a.matchScore);
       } else if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
-        // For uploaded images, compare with all persons
         const matchPromises = mockPersons.map(async (person) => {
           try {
-            // Load the target image
             const targetImg = await preloadImage(person.imageUrl || '');
             
-            // Compare faces
             const { matches, similarity } = await compareFaces(
-              uploadedImageRef.current!, 
+              uploadedImageRef.current!,
               targetImg,
-              0.55 // Adjust threshold for stricter matching
+              0.4
             );
             
             if (matches) {
-              // Add similarity score to the person object for sorting
               return {
                 ...person,
                 matchScore: similarity
@@ -249,10 +259,8 @@ const AiMatching = () => {
           }
         });
         
-        // Wait for all comparisons to complete
         const matchResults = await Promise.all(matchPromises);
         
-        // Filter out null results and sort by similarity
         results = matchResults
           .filter((result): result is Person & { matchScore: number } => result !== null)
           .sort((a, b) => b.matchScore - a.matchScore);

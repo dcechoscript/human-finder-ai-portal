@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -75,6 +74,32 @@ const mockPersons: Person[] = [
     status: PersonStatus.FOUND,
     reportedDate: "2023-12-01",
   },
+  {
+    id: "6",
+    name: "Alex Johnson",
+    age: 32,
+    gender: "male",
+    lastSeenDate: "2023-10-25",
+    lastSeenLocation: "Chicago, IL",
+    description: "Has a distinctive birthmark on right cheek. Last seen at train station.",
+    contactInfo: "chicago.pd@example.com",
+    imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop",
+    status: PersonStatus.MISSING,
+    reportedDate: "2023-10-26",
+  },
+  {
+    id: "7",
+    name: "Alex Johnson",
+    age: 32,
+    gender: "male",
+    lastSeenDate: "2023-12-12",
+    lastSeenLocation: "Denver, CO",
+    description: "Found disoriented at a local hospital. Has a distinctive birthmark on right cheek.",
+    contactInfo: "denver.pd@example.com",
+    imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&h=800&fit=crop",
+    status: PersonStatus.FOUND,
+    reportedDate: "2023-12-13",
+  }
 ];
 
 const PersonDetail = () => {
@@ -92,11 +117,10 @@ const PersonDetail = () => {
       if (foundPerson) {
         setPerson(foundPerson);
         
-        // Generate potential matches based on opposite status
-        // In real application, this would use AI matching
+        // Generate potential matches based on opposite status and same name
         const matches = mockPersons.filter(p => 
           p.id !== id && 
-          p.status !== foundPerson.status && 
+          (p.status !== foundPerson.status || p.name === foundPerson.name) && 
           (p.gender === foundPerson.gender || !p.gender || !foundPerson.gender)
         ).slice(0, 3);
         
