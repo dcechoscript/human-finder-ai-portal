@@ -14,13 +14,17 @@ export const loadFaceDetectionModels = async () => {
     isLoading = true;
     console.log('Attempting to load face detection models...');
     
-    // Load models from public folder - with explicit error handling
+    // Load models from public folder with better error handling
     try {
-      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+      // Use absolute URLs to ensure models are found correctly
+      const modelUrl = window.location.origin + '/models';
+      console.log('Loading models from:', modelUrl);
+      
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl);
       console.log('SSD MobileNet model loaded');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl);
       console.log('Face Landmark model loaded');
-      await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+      await faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl);
       console.log('Face Recognition model loaded');
       
       modelsLoaded = true;

@@ -39,6 +39,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Mock Google login function
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Mock successful Google login
+      setUser({
+        id: "google-user-1",
+        name: "Google User",
+        email: "googleuser@gmail.com"
+      });
+      toast({
+        title: "Google login successful",
+        description: "Welcome!",
+      });
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast({
+        title: "Google login failed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Mock register function
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
@@ -78,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
