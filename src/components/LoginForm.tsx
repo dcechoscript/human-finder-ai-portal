@@ -25,9 +25,9 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center items-center min-h-[calc(100vh-12rem)]">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl">Log In</CardTitle>
           <CardDescription>
             Enter your credentials to access your account

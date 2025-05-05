@@ -6,7 +6,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      <main className="container mx-auto px-4 py-12 flex-grow">
+      <main className="container mx-auto px-4 py-12 flex-grow flex items-center justify-center">
         <LoginForm />
       </main>
       <footer className="bg-gray-100 py-6">
