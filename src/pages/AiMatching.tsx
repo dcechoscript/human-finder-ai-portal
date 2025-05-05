@@ -1,16 +1,19 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
+import { Upload, Image as ImageIcon, Loader2, AlertCircle, Bell } from "lucide-react";
 import { Person, PersonStatus } from "@/types";
 import ImageUploader from "@/components/ImageUploader";
 import PersonSelector from "@/components/PersonSelector";
 import { toast } from "@/hooks/use-toast";
 import { detectHumanFace, compareFaces, preloadImage } from "@/utils/faceDetection";
+import { NotificationService } from "@/services/NotificationService";
 
+// Include example person that exists in both missing and found categories (same person with different records)
 const mockPersons: Person[] = [
   {
     id: "1",
@@ -102,6 +105,7 @@ const AiMatching = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+  const [notificationSent, setNotificationSent] = useState<boolean>(false);
   
   const uploadedImageRef = useRef<HTMLImageElement | null>(null);
   
@@ -139,17 +143,6 @@ const AiMatching = () => {
     setSelectedPerson(person);
   };
   
-  const loadFaceDetectionModels = async () => {
-    try {
-      const { loadFaceDetectionModels } = await import('@/utils/faceDetection');
-      const success = await loadFaceDetectionModels();
-      return success;
-    } catch (error) {
-      console.error("Error loading face detection models:", error);
-      return false;
-    }
-  };
-  
   const runAiMatching = async () => {
     if (!uploadedImage && !selectedPerson && activeTab === "upload") {
       toast({
@@ -172,6 +165,7 @@ const AiMatching = () => {
     setIsSearching(true);
     setHasSearched(false);
     setSearchResults([]);
+    setNotificationSent(false);
     
     try {
       if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
@@ -194,28 +188,33 @@ const AiMatching = () => {
       let results: Person[] = [];
       
       if (activeTab === "select" && selectedPerson) {
+        // Find persons from the opposite status (missing/found)
         const oppositeCategoryPersons = mockPersons.filter(person => 
-          (person.status !== selectedPerson.status || person.name === selectedPerson.name) && 
-          person.id !== selectedPerson.id
+          person.status !== selectedPerson.status
         );
         
         const matchPromises = oppositeCategoryPersons.map(async (person) => {
           try {
+            // Special case for same people (Alex Johnson in both categories - ID 6 and 7)
+            // This is for the example match
+            if (
+              (selectedPerson.id === "6" && person.id === "7") || 
+              (selectedPerson.id === "7" && person.id === "6")
+            ) {
+              return {
+                ...person,
+                matchScore: 0.95 // Guaranteed match for demo
+              };
+            }
+            
             const sourceImg = await preloadImage(selectedPerson.imageUrl || '');
             const targetImg = await preloadImage(person.imageUrl || '');
             
             const { matches, similarity } = await compareFaces(
               sourceImg, 
               targetImg, 
-              0.4
+              0.5 // Using stricter threshold for better accuracy
             );
-            
-            if (person.name === selectedPerson.name && person.imageUrl === selectedPerson.imageUrl) {
-              return {
-                ...person,
-                matchScore: 1.0
-              };
-            }
             
             if (matches) {
               return {
@@ -235,15 +234,45 @@ const AiMatching = () => {
         results = matchResults
           .filter((result): result is Person & { matchScore: number } => result !== null)
           .sort((a, b) => b.matchScore - a.matchScore);
+          
+        // Create notifications for matches if any found
+        if (results.length > 0) {
+          const topMatch = results[0];
+          
+          // Determine which person is missing and which is found
+          let missingPerson = selectedPerson.status === PersonStatus.MISSING ? selectedPerson : topMatch;
+          let foundPerson = selectedPerson.status === PersonStatus.FOUND ? selectedPerson : topMatch;
+          
+          // Create notification
+          NotificationService.createMatchNotification(
+            missingPerson,
+            foundPerson,
+            topMatch.matchScore
+          );
+          
+          // Show toast notification
+          NotificationService.showMatchToast(
+            missingPerson,
+            foundPerson,
+            topMatch.matchScore
+          );
+          
+          setNotificationSent(true);
+        } else {
+          // No matches found
+          NotificationService.showNoMatchToast(selectedPerson);
+        }
       } else if (activeTab === "upload" && uploadedImage && uploadedImageRef.current) {
-        const matchPromises = mockPersons.map(async (person) => {
+        const allPersons = mockPersons;
+        
+        const matchPromises = allPersons.map(async (person) => {
           try {
             const targetImg = await preloadImage(person.imageUrl || '');
             
             const { matches, similarity } = await compareFaces(
               uploadedImageRef.current!,
               targetImg,
-              0.4
+              0.5 // Using stricter threshold for better matches
             );
             
             if (matches) {
@@ -264,6 +293,8 @@ const AiMatching = () => {
         results = matchResults
           .filter((result): result is Person & { matchScore: number } => result !== null)
           .sort((a, b) => b.matchScore - a.matchScore);
+          
+        // No notification for uploaded images since there's no "reporter"
       }
       
       setSearchResults(results);
@@ -271,10 +302,12 @@ const AiMatching = () => {
       setHasSearched(true);
       
       if (results.length > 0) {
-        toast({
-          title: "Potential matches found",
-          description: `Found ${results.length} potential ${results.length === 1 ? 'match' : 'matches'}`,
-        });
+        if (activeTab === "upload") {
+          toast({
+            title: "Potential matches found",
+            description: `Found ${results.length} potential ${results.length === 1 ? 'match' : 'matches'}`,
+          });
+        }
       } else {
         toast({
           title: "No matches found",
@@ -331,6 +364,20 @@ const AiMatching = () => {
             </div>
           ) : (
             <>
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-8">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Bell className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Example matches:</strong> Select "Alex Johnson" (missing) to find his match in the found persons.
+                      Or try "John Doe" (missing) who has no matches to see how no-match cases work.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "upload" | "select")} className="mb-8">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="select">Select Existing Person</TabsTrigger>
@@ -408,6 +455,20 @@ const AiMatching = () => {
                     {searchResults.length > 0 ? "Potential Matches" : "No Matches Found"}
                   </h2>
                   
+                  {notificationSent && activeTab === "select" && searchResults.length > 0 && (
+                    <div className="mb-6 p-4 bg-green-100 border border-green-200 rounded-lg">
+                      <div className="flex items-start">
+                        <Bell className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                        <div>
+                          <h3 className="font-medium text-green-800">Notifications Sent</h3>
+                          <p className="text-sm text-green-700">
+                            Both reporters have been notified about this potential match.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {searchResults.length === 0 ? (
                     <div className="text-center py-10 bg-white rounded-lg shadow">
                       <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -429,6 +490,10 @@ const AiMatching = () => {
                           </div>
                           <CardContent className="p-4">
                             <h3 className="font-medium text-lg mb-1">{person.name}</h3>
+                            <div className="bg-green-100 px-2 py-1 rounded-full text-sm text-green-800 inline-flex items-center mb-2">
+                              <span className="font-bold mr-1">Match:</span> 
+                              {Math.round((person as any).matchScore * 100)}%
+                            </div>
                             <p className="text-sm text-gray-500 mb-2">
                               {person.status === PersonStatus.MISSING ? "Missing since" : "Found on"}: {new Date(person.lastSeenDate).toLocaleDateString()}
                             </p>
