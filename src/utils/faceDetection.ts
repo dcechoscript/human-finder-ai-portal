@@ -26,7 +26,10 @@ export const loadFaceDetectionModels = async (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.setAttribute('async', '');
-      script.setAttribute('src', `${window.location.origin}/opencv/opencv.js`);
+      
+      // Use full URL path with origin to avoid relative path issues
+      const baseUrl = window.location.origin;
+      script.setAttribute('src', `${baseUrl}/opencv/opencv.js`);
       
       script.onload = () => {
         console.log('OpenCV script loaded, waiting for CV to be ready');
@@ -45,7 +48,7 @@ export const loadFaceDetectionModels = async (): Promise<boolean> => {
       script.onerror = (err) => {
         console.error('Error loading OpenCV:', err);
         isLoading = false;
-        reject(new Error('Failed to load OpenCV.js'));
+        reject(new Error('Failed to load OpenCV.js - Please ensure you have run the download script: node public/opencv/download-models.js'));
       };
       
       // Add script to document
@@ -94,7 +97,8 @@ export const detectHumanFace = async (imageElement: HTMLImageElement): Promise<b
     
     // Load Haar cascade classifier
     const classifier = new window.cv.CascadeClassifier();
-    const cascadePath = `${window.location.origin}/opencv/haarcascade_frontalface_default.xml`;
+    const baseUrl = window.location.origin;
+    const cascadePath = `${baseUrl}/opencv/haarcascade_frontalface_default.xml`;
     
     try {
       // Fetch the cascade XML file

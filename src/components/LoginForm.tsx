@@ -53,10 +53,9 @@ const LoginForm = () => {
               Continue with Google
             </Button>
             
-            <div className="flex items-center gap-2">
-              <Separator className="flex-grow" />
-              <span className="text-xs text-muted-foreground">OR</span>
-              <Separator className="flex-grow" />
+            <div className="relative flex items-center justify-center">
+              <Separator className="absolute w-full" />
+              <span className="relative bg-card px-2 text-xs text-muted-foreground">OR</span>
             </div>
             
             <div className="space-y-2">
