@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -217,10 +216,11 @@ const AiMatching = () => {
             );
             
             if (matches) {
+              // Create a new object with the matchScore property added
               return {
                 ...person,
                 matchScore: similarity
-              };
+              } as Person; // Explicitly cast to Person type with matchScore
             }
             return null;
           } catch (error) {
@@ -232,8 +232,8 @@ const AiMatching = () => {
         const matchResults = await Promise.all(matchPromises);
         
         results = matchResults
-          .filter((result): result is Person & { matchScore: number } => result !== null)
-          .sort((a, b) => b.matchScore - a.matchScore);
+          .filter((result): result is Person => result !== null)
+          .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
           
         // Create notifications for matches if any found
         if (results.length > 0) {
@@ -276,10 +276,11 @@ const AiMatching = () => {
             );
             
             if (matches) {
+              // Create a new object with the matchScore property added
               return {
                 ...person,
                 matchScore: similarity
-              };
+              } as Person; // Explicitly cast to Person type with matchScore
             }
             return null;
           } catch (error) {
@@ -291,8 +292,8 @@ const AiMatching = () => {
         const matchResults = await Promise.all(matchPromises);
         
         results = matchResults
-          .filter((result): result is Person & { matchScore: number } => result !== null)
-          .sort((a, b) => b.matchScore - a.matchScore);
+          .filter((result): result is Person => result !== null)
+          .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
           
         // No notification for uploaded images since there's no "reporter"
       }
@@ -492,7 +493,7 @@ const AiMatching = () => {
                             <h3 className="font-medium text-lg mb-1">{person.name}</h3>
                             <div className="bg-green-100 px-2 py-1 rounded-full text-sm text-green-800 inline-flex items-center mb-2">
                               <span className="font-bold mr-1">Match:</span> 
-                              {Math.round((person as any).matchScore * 100)}%
+                              {Math.round((person.matchScore || 0) * 100)}%
                             </div>
                             <p className="text-sm text-gray-500 mb-2">
                               {person.status === PersonStatus.MISSING ? "Missing since" : "Found on"}: {new Date(person.lastSeenDate).toLocaleDateString()}

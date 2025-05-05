@@ -17,6 +17,7 @@ export interface Person {
   status: PersonStatus;
   reportedBy?: string;
   reportedDate: string;
+  matchScore?: number; // Added matchScore as an optional property
 }
 
 export interface User {
